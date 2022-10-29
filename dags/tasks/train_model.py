@@ -52,7 +52,7 @@ def train_model(config: Config):
         for day in range(1, 8):
             features = features.withColumn(f"flight_weekday_{day}", (F.dayofweek("FL_DATE") == F.lit(day)).cast("int"))
 
-        features = features.select(feature_columns)
+        features = features.select(feature_columns + ["ARR_DELAY"])
         outpul_columns = ["{}_imputed".format(c) for c in features.columns]
         imputer = Imputer(
             inputCols=features.columns,
