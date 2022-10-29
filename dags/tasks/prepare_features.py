@@ -28,19 +28,21 @@ def collect_raw_data(config: Config):
     """
     spark = get_spark(app_name=f"{config.dag_name}/collect_raw_data")
     from_date = Variable.get("max_available_date", None)
+    to_date = datetime.datetime.now()
     if from_date is None:
         from_date = (
-                datetime.datetime.now()
+                to_date
                 - datetime.timedelta(days=config.max_history_days)
         )
     logger.info(f"FROM_DATE: {from_date} (used in filter).")
+    logger.info(f"TO_DATE: {to_date} (used in filter).")
 
     data_path = f"{config.output_prefix}/raw_data.parquet"
     data = read_parquet(spark, data_path)
 
     data = data.filter(
         (F.col(config.date_dk) >= str(from_date.date()))
-        & (F.col(config.date_dk) <= str(datetime.datetime.now().date()))
+        & (F.col(config.date_dk) <= str(to_date.date()))
     )
 
     Variable.set("max_available_date", str(datetime.datetime.now().date()))
