@@ -20,7 +20,8 @@ def get_spark(app_name=None):
 
     spark = pyspark.sql.SparkSession.builder.config(conf=conf).getOrCreate()
 
-    print(spark)
+    logger.info(f"Created spark session {spark}, app_name: {app_name}")
+    logger.info(f"Application_ID - {spark.sparkContext.applicationId}")
     return spark
 
 def read_parquet(spark, path):
