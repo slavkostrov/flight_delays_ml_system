@@ -19,7 +19,7 @@ from tasks.prepare_features import collect_raw_data, clean_data, concat_features
 config = Config()
 
 with DAG(
-        f"{config.dag_prefix}train_model",
+        f"{config.dag_prefix}feature_monitoring",
         default_args={
             'depends_on_past': False,
             'email': [config.user_email],
@@ -27,7 +27,7 @@ with DAG(
             'email_on_retry': True,
             'retries': 3,
         },
-        description="DAG for weekly feature preparation.",
+        description="DAG for feature monitoring.",
         doc_md=__doc__,
         schedule_interval=None,
         start_date=datetime.datetime(2022, 10, 30, 10),
