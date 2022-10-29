@@ -49,7 +49,7 @@ def train_model(config: Config):
 
         assembler = VectorAssembler(inputCols=feature_columns, outputCol="features")
 
-        flights_sdf_v2 = assembler.transform(features)
+        flights_sdf_v2 = assembler.transform(features.dropna())
         flights_sdf_v2 = flights_sdf_v2.select(['features', 'ARR_DELAY'])
 
         # Splitting into train and test datasets
