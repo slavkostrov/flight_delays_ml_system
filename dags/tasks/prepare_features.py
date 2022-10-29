@@ -34,6 +34,8 @@ def collect_raw_data(config: Config):
                 to_date
                 - datetime.timedelta(days=config.max_history_days)
         )
+        from_date = str(from_date.date())
+    to_date = str(to_date.date())
     logger.info(f"FROM_DATE: {from_date} (used in filter).")
     logger.info(f"TO_DATE: {to_date} (used in filter).")
 
@@ -45,10 +47,10 @@ def collect_raw_data(config: Config):
         & (F.col(config.date_dk) <= str(to_date.date()))
     )
 
-    Variable.set("max_available_date", str(datetime.datetime.now().date()))
     output_path = f"{config.output_prefix}/fresh_data_part.parquet"
     logger.info(f"Writing result into {output_path}.")
     data.write.parquet(output_path, mode="overwrite")
+    Variable.set("max_available_date", str(to_date.date()))
 
 
 def clean_data(config: Config):
