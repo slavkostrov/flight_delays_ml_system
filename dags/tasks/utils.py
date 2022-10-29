@@ -1,5 +1,6 @@
 """utils module.""" ""
 import logging
+import os
 
 logger = logging.getLogger("tasks.utils")
 
@@ -26,6 +27,17 @@ def get_spark(app_name=None):
     logger.info(f"Created spark session {spark}, app_name: {app_name}")
     logger.info(f"Application_ID - {spark.sparkContext.applicationId}")
     return spark
+
+
+def setup_s3_credentials(secret_path: str = "/etc/mlflow/secrets.txt"):
+    """Setup S3 credentials to env variables."""
+    with open(secret_path, "r") as file:
+        txt = file.read()
+    for line in txt.split("\n"):
+        if line.strip() != "":
+            key, value = line.split(": ")
+            os.environ[key] = value
+
 
 def read_parquet(spark, path):
     logger.info(f"Reading data from {path}.")

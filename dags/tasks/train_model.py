@@ -9,7 +9,7 @@ from pyspark.ml import Pipeline
 _folder = __file__[: __file__.rfind("/") + 1]
 sys.path.extend([_folder, _folder[:_folder.rfind("/") + 1]])
 
-from utils import get_spark
+from utils import get_spark, setup_s3_credentials
 from base_config import Config
 
 import mlflow
@@ -36,9 +36,10 @@ def train_model(config: Config):
     :return:
     """
     spark = get_spark(app_name=f"{config.dag_name}/train_model")
+    setup_s3_credentials()
+
     # enable pyspark autologs, metrics logging disabled for custom names
     mlflow.pyspark.ml.autolog(log_post_training_metrics=True)
-
     # set tracking uri (localhost for education)
     mlflow.set_tracking_uri(config.mlflow_tracking_uri)
 
@@ -52,8 +53,8 @@ def train_model(config: Config):
         for day in range(1, 8):
             features = features.withColumn(f"flight_weekday_{day}", (F.dayofweek("FL_DATE") == F.lit(day)).cast("int"))
 
-        features = features.select(feature_columns + ["ARR_DELAY"])
-        features = features.filter(F.col("ARR_DELAY").isNotNull())
+        features = features.select(feature_columns + [config.target_column])
+        features = features.filter(F.col(config.target_column).isNotNull())
 
         output_columns = ["{}_imputed".format(c) for c in features.columns]
         imputer = Imputer(
@@ -68,23 +69,21 @@ def train_model(config: Config):
         logging.info("Transforming Features")
         features = transformer.transform(features)
 
-        model = LinearRegression(featuresCol="features", labelCol="ARR_DELAY")
+        model = LinearRegression(featuresCol="features", labelCol=config.target_column)
         # Splitting into train and test datasets
         train, test = features.randomSplit([0.8, 0.2])
         model = model.fit(train)
 
-        lr_model_v1 = model
-
         # Predicting and Finding R2 and RMSE Values
-        predictions_v1 = lr_model_v1.transform(test)
-        eval_reg = RegressionEvaluator(labelCol="ARR_DELAY", metricName="r2")
-        test_result_v1 = lr_model_v1.evaluate(test)
+        predictions = model.transform(test)
+        eval_reg = RegressionEvaluator(labelCol=config.target_column, metricName="r2")
+        eval_results = model.evaluate(test)
 
-        logger.info("R Squared (R2) on test data = %g" % eval_reg.evaluate(predictions_v1))
-        logger.info("Root Mean Squared Error (RMSE) on test data = %g" % test_result_v1.rootMeanSquaredError)
+        logger.info("R Squared (R2) on test data = %g" % eval_reg.evaluate(predictions))
+        logger.info("Root Mean Squared Error (RMSE) on test data = %g" % eval_results.rootMeanSquaredError)
 
-        mlflow.spark.log_model(lr_model_v1, "SparkML-linear-regression", registered_model_name=model_name)
-        return
+        mlflow.spark.log_model(model, "regression", registered_model_name=model_name)
+        mlflow.spark.log_model(model, "pipeline")
 
 
 def eval_model(config: Config):

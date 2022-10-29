@@ -31,7 +31,7 @@ class Config(BaseModel):
 
     # date primary key
     date_dk: str = "FL_DATE"
-    target_column: str = "DEP_DELAY"
+    target_column: str = "ARR_DELAY"
 
     required_columns: tp.List[str] = [
         'FL_DATE',
