@@ -46,6 +46,12 @@ def collect_raw_data(config: Config):
 
 
 def clean_data(config: Config):
+    """
+    Delete useless rows/columns from data.
+
+    :param config:  Config object (see base_config.py)
+    :return:
+    """
     spark = get_spark(app_name=f"{config.dag_name}/collect_raw_data")
 
     data_path = f"{config.output_prefix}/fresh_data_part.parquet"
@@ -69,6 +75,12 @@ def clean_data(config: Config):
 
 
 def concat_features(config: Config):
+    """
+    Add new data delta to already calculated features.
+
+    :param config:  Config object (see base_config.py)
+    :return:
+    """
     spark = get_spark(app_name=f"{config.dag_name}/concat_features")
     features_path = f"{config.output_prefix}/features_{config.dataset_name}.parquet"
 
