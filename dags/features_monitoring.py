@@ -19,7 +19,7 @@ from tasks.prepare_features import collect_raw_data, clean_data, concat_features
 config = Config()
 
 with DAG(
-    f"{config.dag_prefix}feature_monitoring",
+    f"{config.dag_prefix}features_monitoring",
     default_args={
         "depends_on_past": False,
         "email": [config.user_email],
