@@ -1,6 +1,7 @@
 """
 Module with tasks for model training
 """
+import datetime
 import sys
 
 _folder = __file__[: __file__.rfind("/") + 1]
@@ -40,9 +41,12 @@ def train_model(config: Config):
     # set tracking uri (localhost for education)
     mlflow.set_tracking_uri(config.mlflow_tracking_uri)
 
+    today = str(datetime.datetime.now().date())
+    model_name = f"{config.model_name}_{today}"
+
     # set exp name
     mlflow.set_experiment("flight_delay_model")
-    with mlflow.start_run(description="flight_delay_model_evaluation") as active_run:
+    with mlflow.start_run(run_name=model_name, description="flight_delay_model_evaluation") as active_run:
         features = spark.read.parquet(f"{config.output_prefix}/features_{config.dataset_name}.parquet")
         for day in range(1, 8):
             features = features.withColumn(f"flight_weekday_{day}", (F.dayofweek("FL_DATE") == F.lit(day)).cast("int"))
@@ -67,6 +71,7 @@ def train_model(config: Config):
         logger.info("R Squared (R2) on test data = %g" % eval_reg.evaluate(predictions_v1))
         logger.info("Root Mean Squared Error (RMSE) on test data = %g" % test_result_v1.rootMeanSquaredError)
 
+        mlflow.spark.log_model(lr_model_v1, "SparkML-linear-regression")
         return
         os.system("hdfs dfs -rm -r tmp_model")
         fitted_model.save("tmp_model")
