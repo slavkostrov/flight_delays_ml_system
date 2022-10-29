@@ -53,15 +53,22 @@ def train_model(config: Config):
             features = features.withColumn(f"flight_weekday_{day}", (F.dayofweek("FL_DATE") == F.lit(day)).cast("int"))
 
         features = features.select(feature_columns + ["ARR_DELAY"])
-        outpul_columns = ["{}_imputed".format(c) for c in features.columns]
+        features = features.filter(F.col("ARR_DELAY").isNotNull())
+
+        output_columns = ["{}_imputed".format(c) for c in features.columns]
         imputer = Imputer(
             inputCols=features.columns,
-            outputCols=outpul_columns,
+            outputCols=output_columns,
         ).setStrategy("mean")
-        assembler = VectorAssembler(inputCols=outpul_columns, outputCol="features")
-        lr = LinearRegression(featuresCol="features", labelCol="ARR_DELAY")
-        model = Pipeline(stages=[imputer, assembler, lr])
+        assembler = VectorAssembler(inputCols=output_columns, outputCol="features")
+        transformer = Pipeline(stages=[imputer, assembler])
 
+        logger.info("Fitting Transformer.")
+        transformer = transformer.fit(features)
+        logging.info("Transforming Features")
+        features = transformer.transform(features)
+
+        model = LinearRegression(featuresCol="features", labelCol="ARR_DELAY")
         # Splitting into train and test datasets
         train, test = features.randomSplit([0.8, 0.2])
         model = model.fit(train)
