@@ -9,7 +9,7 @@ DAG takes raw data and prepare it for next using in ML model fitting.
 import datetime
 
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
+from airflow.operators import DummyOperator as EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
