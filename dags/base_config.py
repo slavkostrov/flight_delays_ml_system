@@ -25,3 +25,34 @@ class Config(BaseModel):
 
     # dag prefix
     dag_prefix: tp.AnyStr = "PROD_"
+
+    # max date to use in train
+    max_history_days: int = 100
+
+    # date primary key
+    date_dk: str = "FL_DATE"
+    target_column: str = "DEP_DELAY"
+
+    required_columns: tp.List[str] = [
+        'FL_DATE',
+        'OP_CARRIER',
+        'OP_CARRIER_FL_NUM',
+        'ORIGIN',
+        'DEST',
+        'CRS_DEP_TIME',
+        'DEP_TIME',
+        'DEP_DELAY',
+        'TAXI_OUT',
+        'WHEELS_OFF',
+        'WHEELS_ON',
+        'TAXI_IN',
+        'CRS_ARR_TIME',
+        'ARR_TIME',
+        'ARR_DELAY',
+        'CANCELLED',
+        'DIVERTED',
+        'CRS_ELAPSED_TIME',
+        'ACTUAL_ELAPSED_TIME',
+        'AIR_TIME',
+        'DISTANCE'
+    ]
