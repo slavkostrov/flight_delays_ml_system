@@ -1,4 +1,7 @@
 """utils module.""" ""
+import logging
+
+logger = logging.getLogger("tasks.utils")
 
 
 def get_spark(app_name=None):
@@ -9,7 +12,7 @@ def get_spark(app_name=None):
     conf = SparkConf()
     conf.setAppName(app_name)
     conf.set("spark.dynamicAllocation.enabled", "true")
-    conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
+    # conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
     conf.set("spark.driver.maxResultSize", "4G")
     conf.set("spark.driver.memory", "4G")
     conf.set("spark.executor.memory", "4G")
@@ -19,6 +22,10 @@ def get_spark(app_name=None):
 
     print(spark)
     return spark
+
+def read_parquet(spark, path):
+    logger.info(f"Reading data from {path}.")
+    return spark.read.parquet(path)
 
 
 if __name__ == "__main__":

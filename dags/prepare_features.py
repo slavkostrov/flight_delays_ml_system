@@ -17,22 +17,25 @@ from base_config import Config
 from tasks.prepare_features import collect_raw_data, clean_data, concat_features
 
 config = Config()
+DAG_NAME = f"{config.dag_prefix}prepare_features"
+config.dag_name = DAG_NAME
+
 
 with DAG(
-    f"{config.dag_prefix}prepare_features",
-    default_args={
-        "depends_on_past": False,
-        "email": [config.user_email],
-        "email_on_failure": True,
-        "email_on_retry": True,
-        "retries": 3,
-    },
-    description="DAG for weekly feature preparation.",
-    doc_md=__doc__,
-    schedule_interval="@weekly",
-    start_date=datetime.datetime(2022, 10, 28, 10),
-    catchup=False,
-    tags=["critical"],
+        DAG_NAME,
+        default_args={
+            "depends_on_past": False,
+            "email": [config.user_email],
+            "email_on_failure": True,
+            "email_on_retry": True,
+            "retries": 3,
+        },
+        description="DAG for weekly feature preparation.",
+        doc_md=__doc__,
+        schedule_interval="@weekly",
+        start_date=datetime.datetime(2022, 10, 28, 10),
+        catchup=False,
+        tags=["critical"],
 ) as dag:
     dag.doc_md = __doc__
 
@@ -41,7 +44,7 @@ with DAG(
 
     # collecting raw data from API / or (in this case) just simulated data
     collect_raw_data_task = PythonOperator(
-        python_callable=collect_raw_data, task_id="collect_raw_data"
+        python_callable=collect_raw_data, op_kwargs={"config": config}, task_id="collect_raw_data"
     )
 
     clean_data_task = PythonOperator(
