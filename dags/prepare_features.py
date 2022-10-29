@@ -1,5 +1,5 @@
 """
-### Feature preparation DAG
+### Feature preparation DAG.
 #### Purpose
 DAG takes raw data and prepare it for next using in ML model fitting.
 #### Notes
@@ -27,7 +27,8 @@ with DAG(
             'email_on_retry': True,
             'retries': 3,
         },
-        description=__doc__,
+        description="DAG for weekly feature preparation.",
+        doc_md=__doc__,
         schedule_interval='@weekly',
         start_date=datetime.datetime(2022, 10, 30, 10),
         catchup=False,

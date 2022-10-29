@@ -1,7 +1,7 @@
 """
-### Feature preparation DAG
+### Model train DAG.
 #### Purpose
-DAG takes raw data and prepare it for next using in ML model fitting.
+DAG takes prepared features and fit ML model.
 #### Notes
 - Check README.md before using
 - [Main GitHub repository](https://github.com/slavkostrov/flight_delays_ml_system)
@@ -27,7 +27,8 @@ with DAG(
             'email_on_retry': True,
             'retries': 3,
         },
-        description=__doc__,
+        description="DAG for weekly model training.",
+        doc_md=__doc__,
         schedule_interval=None,
         start_date=datetime.datetime(2022, 10, 30, 10),
         catchup=False,
