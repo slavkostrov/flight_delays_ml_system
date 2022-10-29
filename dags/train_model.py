@@ -19,20 +19,20 @@ from tasks.prepare_features import collect_raw_data, clean_data, concat_features
 config = Config()
 
 with DAG(
-        f"{config.dag_prefix}train_model",
-        default_args={
-            'depends_on_past': False,
-            'email': [config.user_email],
-            'email_on_failure': True,
-            'email_on_retry': True,
-            'retries': 3,
-        },
-        description="DAG for weekly model training.",
-        doc_md=__doc__,
-        schedule_interval=None,
-        start_date=datetime.datetime(2022, 10, 30, 10),
-        catchup=False,
-        tags=['critical'],
+    f"{config.dag_prefix}train_model",
+    default_args={
+        "depends_on_past": False,
+        "email": [config.user_email],
+        "email_on_failure": True,
+        "email_on_retry": True,
+        "retries": 3,
+    },
+    description="DAG for weekly model training.",
+    doc_md=__doc__,
+    schedule_interval=None,
+    start_date=datetime.datetime(2022, 10, 30, 10),
+    catchup=False,
+    tags=["critical"],
 ) as dag:
     dag.doc_md = __doc__
 

@@ -1,4 +1,4 @@
-"""utils module."""""
+"""utils module.""" ""
 
 
 def get_spark(app_name=None):
@@ -16,6 +16,8 @@ def get_spark(app_name=None):
     conf.set("spark.driver.allowMultipleContexts", "true")
 
     spark = pyspark.sql.SparkSession.builder.config(conf=conf).getOrCreate()
+
+    print(spark)
     return spark
 
 

@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr
 
 class Config(BaseModel):
     """
-        Base config for all ML pipeline DAGs.
+    Base config for all ML pipeline DAGs.
     """
 
     # hdfs path of main production folder
@@ -25,4 +25,3 @@ class Config(BaseModel):
 
     # dag prefix
     dag_prefix: tp.AnyStr = "PROD_"
-
