@@ -38,8 +38,12 @@ def collect_raw_data(config: Config):
     data_path = f"{config.output_prefix}/raw_data.parquet"
     data = read_parquet(spark, data_path)
 
-    data = data.filter(F.col(config.date_dk) > str(from_date.date()))
+    data = data.filter(
+        (F.col(config.date_dk) >= str(from_date.date()))
+        & (F.col(config.date_dk) <= str(datetime.datetime.now().date()))
+    )
 
+    Variable.set("max_available_date", str(datetime.datetime.now().date()))
     output_path = f"{config.output_prefix}/fresh_data_part.parquet"
     logger.info(f"Writing result into {output_path}.")
     data.write.parquet(output_path, mode="overwrite")
