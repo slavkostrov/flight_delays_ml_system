@@ -16,6 +16,7 @@ def get_spark(app_name=None):
     conf.set("spark.driver.maxResultSize", "4G")
     conf.set("spark.driver.memory", "4G")
     conf.set("spark.executor.memory", "4G")
+    conf.set("spark.submit.deployMode", "cluster")
     conf.set("spark.driver.allowMultipleContexts", "true")
 
     spark = pyspark.sql.SparkSession.builder.config(conf=conf).getOrCreate()
