@@ -1,6 +1,6 @@
 import typing as tp
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class Config(BaseModel):
@@ -19,3 +19,10 @@ class Config(BaseModel):
 
     # max train dataset size (limitation of resources)
     max_train_size: int = 5_000_000
+
+    # email of user
+    user_email: EmailStr = "slavkostrov@gmail.com"
+
+    # dag prefix
+    dag_prefix: tp.AnyStr = "PROD_"
+
