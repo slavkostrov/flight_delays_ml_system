@@ -1,6 +1,8 @@
 """
 Module with tasks for feature generation
 """
+import sys
+sys.path.append(__file__[:__file__.rfind("/") + 1])
 from utils import get_spark
 
 
