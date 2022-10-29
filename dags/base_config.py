@@ -56,3 +56,6 @@ class Config(BaseModel):
         'AIR_TIME',
         'DISTANCE'
     ]
+
+    dag_name: str = ""
+
