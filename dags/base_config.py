@@ -1,6 +1,6 @@
 import typing as tp
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, HttpUrl
 
 
 class Config(BaseModel):
@@ -58,4 +58,4 @@ class Config(BaseModel):
     ]
 
     dag_name: str = ""
-
+    mlflow_tracking_uri: HttpUrl = "http://localhost:5000"
