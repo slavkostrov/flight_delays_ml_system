@@ -14,7 +14,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 from base_config import Config
-from tasks.prepare_features import collect_raw_data, clean_data, concat_features
+from tasks.train_model import train_model
 
 config = Config()
 
@@ -30,13 +30,17 @@ with DAG(
     description="DAG for weekly model training.",
     doc_md=__doc__,
     schedule_interval=None,
-    start_date=datetime.datetime(2022, 10, 30, 10),
+    start_date=datetime.datetime(2022, 10, 28, 10),
     catchup=False,
     tags=["critical"],
 ) as dag:
     dag.doc_md = __doc__
 
     start_task = EmptyOperator(task_id="start")
-    end_task = EmptyOperator(task_id="end")
 
-    start_task >> end_task
+    train_model_task = PythonOperator(
+        python_callable=train_model, op_kwargs={"config": config}, task_id="train_model"
+    )
+
+    end_task = EmptyOperator(task_id="end")
+    start_task >> train_model_task >> end_task
