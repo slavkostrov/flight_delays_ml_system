@@ -2,3 +2,11 @@ pre-commit
 
 pydantic~=1.10.2
 boto3
+airflow
+pyspark==3.3.1
+apache-airflow-providers-postgres
+scipy
+mlflow
+scikit-learn
+pandas
+numpy
