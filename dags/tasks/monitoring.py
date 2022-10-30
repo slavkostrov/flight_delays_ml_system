@@ -107,7 +107,7 @@ def add_new_metrics(config: Config):
     current_experiment = dict(mlflow.get_experiment_by_name(experiment_name))
     experiment_id = current_experiment['experiment_id']
 
-    df = mlflow.search_runs([experiment_id], order_by=["Date DESC"])
+    df = mlflow.search_runs([experiment_id])
     last_run_id = df.loc[0, 'run_id']
     last_run = mlflow.get_run(run_id=last_run_id)
 
