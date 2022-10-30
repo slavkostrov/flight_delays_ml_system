@@ -14,7 +14,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 from base_config import Config
-from tasks.train_model import train_model, eval_model
+from tasks.train_model import train_model, eval_model, move_model_to_s3
 
 config = Config()
 DAG_NAME = f"{config.dag_prefix}train_model"
@@ -44,9 +44,13 @@ with DAG(
         python_callable=train_model, op_kwargs={"config": config}, task_id="train_model"
     )
 
-    eval_model_task  = PythonOperator(
+    eval_model_task = PythonOperator(
         python_callable=eval_model, op_kwargs={"config": config}, task_id="eval_model"
     )
 
+    move_model_to_s3_task = PythonOperator(
+        python_callable=move_model_to_s3, op_kwargs={"config": config}, task_id="move_model_to_s3"
+    )
+
     end_task = EmptyOperator(task_id="end")
-    start_task >> train_model_task >> eval_model_task >> end_task
+    start_task >> train_model_task >> eval_model_task >> move_model_to_s3_task >> end_task

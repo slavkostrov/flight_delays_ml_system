@@ -178,7 +178,13 @@ def move_model_to_s3(config: Config):
     :param config: Config object (see base_config.py)
     :return:
     """
-    pass
+    # /home/ubuntu/final_project/models
+    mlflow.set_tracking_uri(config.mlflow_tracking_uri)
+    setup_s3_credentials()
+
+    local_path = "/home/ubuntu/final_project/models/"
+    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production", dst_path=local_path)
+    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production", dst_path=local_path)
 
 
 def _add_weekdays_features(df):
