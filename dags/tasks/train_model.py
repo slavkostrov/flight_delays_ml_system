@@ -5,6 +5,7 @@ import datetime
 import sys
 
 from pyspark.ml import Pipeline
+from scipy.stats import ttest_ind
 
 _folder = __file__[: __file__.rfind("/") + 1]
 sys.path.extend([_folder, _folder[:_folder.rfind("/") + 1]])
@@ -83,7 +84,8 @@ def train_model(config: Config):
         # Splitting into train and test datasets
         # train, test = features.randomSplit([0.8, 0.2], seed=42)
         from_date = datetime.date.today() - datetime.timedelta(days=config.val_days)
-        logger.info("from_date, min_date, max_data", from_date, features.select(F.min("FL_DATE"), F.max("FL_DATE")).collect())
+        logger.info("from_date, min_date, max_data", from_date,
+                    features.select(F.min("FL_DATE"), F.max("FL_DATE")).collect())
 
         val_filter = F.col("FL_DATE") >= str(from_date)
         train, test = features.filter(~val_filter), features.filter(val_filter)
@@ -110,22 +112,6 @@ def train_model(config: Config):
     train.write.parquet(f"{config.output_prefix}/datasets/{config.dataset_name}/train.parquet", mode="OVERWRITE")
     test.write.parquet(f"{config.output_prefix}/datasets/{config.dataset_name}/test.parquet", mode="OVERWRITE")
 
-    from mlflow.client import MlflowClient
-    client = MlflowClient(config.mlflow_tracking_uri)
-    client.transition_model_version_stage(
-        name=model_name,
-        version=client.get_latest_versions(model_name)[-1].version,
-        stage="Production",
-        archive_existing_versions=True,
-    )
-
-    client.transition_model_version_stage(
-        name=pipeline_name,
-        version=client.get_latest_versions(pipeline_name)[-1].version,
-        stage="Production",
-        archive_existing_versions=True,
-    )
-
 
 def eval_model(config: Config):
     """
@@ -135,9 +121,47 @@ def eval_model(config: Config):
     :param config: Config object (see base_config.py)
     :return:
     """
+
+    spark = get_spark(f"{config.dag_name}/eval_model")
+    val = read_parquet(spark, f"{config.output_prefix}/datasets/{config.dataset_name}/test.parquet")
+
+    setup_s3_credentials()
     from mlflow.client import MlflowClient
     client = MlflowClient(config.mlflow_tracking_uri)
-    # dst_path
+
+    latest_model_version = client.get_latest_versions(config.model_name)[-1].version
+
+    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production")
+    latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}")
+
+    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production")
+    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}")
+
+    logger.info(f"Latest model version is {latest_model_version}.")
+
+    val_prod = current_prod_pipeline.transform(val)
+    val_latest = latest_pipeline.transform(val)
+
+    current_prod_model_metrics = _get_bs_metrics(current_prod_model, val_prod)
+    latest_model_metrics = _get_bs_metrics(latest_model, val_latest)
+
+    test_result = ttest_ind(
+        current_prod_model_metrics["value"], latest_model_metrics["value"], alternative="less"
+    )
+    logger.info(f"ttest_result = {test_result}")
+    pvalue = test_result.pvalue
+
+    NEW_MODEL_BETTER = pvalue < 0.05
+    if NEW_MODEL_BETTER:
+        logger.info(f"New model is better, pvalue - {pvalue}, sending it to production...")
+        client.transition_model_version_stage(
+            name=config.model_name,
+            version=latest_model_version,
+            stage="Production",
+            archive_existing_versions=True,
+        )
+    else:
+        logger.info(f"Current production model is better, pvalue - {pvalue}, production will not updated.")
 
 
 def move_model_to_s3(config: Config):
@@ -154,3 +178,25 @@ def _add_weekdays_features(df):
     for day in range(1, 8):
         df = df.withColumn(f"flight_weekday_{day}", (F.dayofweek("FL_DATE") == F.lit(day)).cast("int"))
     return df
+
+
+def _get_bs_metrics(model, df, num_iterations=3000):
+    from sklearn.metrics import r2_score
+
+    np.random.seed(42)
+    predictions = model.transform(df)
+
+    predictions = predictions.toPandas()
+    y = df.select("ARR_DELAY").toPandas()
+
+    df_w_predictions = pd.DataFrame(
+        {"y": y["ARR_DELAY"], "prediction": predictions["prediction"]}
+    )
+
+    bs_metrics = []
+    for _ in range(num_iterations):
+        sample = df_w_predictions.sample(frac=1.0, replace=True)
+        bs_metrics.append(r2_score(sample["y"], sample["prediction"]))
+
+    bs_metrics = pd.DataFrame({"value": bs_metrics})
+    return bs_metrics
