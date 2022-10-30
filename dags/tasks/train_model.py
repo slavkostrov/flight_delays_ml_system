@@ -123,8 +123,11 @@ def eval_model(config: Config):
     :return:
     """
 
+    mlflow.set_tracking_uri(config.mlflow_tracking_uri)
     spark = get_spark(f"{config.dag_name}/eval_model")
     val = read_parquet(spark, f"{config.output_prefix}/datasets/{config.dataset_name}/test.parquet")
+    if "prediction" in val.columns:
+        val = val.drop("prediction")
 
     setup_s3_credentials()
     from mlflow.client import MlflowClient
@@ -132,18 +135,19 @@ def eval_model(config: Config):
 
     latest_model_version = client.get_latest_versions(config.model_name)[-1].version
 
-    if not os.path.exists("./models"):
-        os.system("mkdir ./models")
-    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production", dfs_tmpdir="./models/")
-    latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}", dfs_tmpdir="./models/")
+    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production")
+    latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}")
 
-    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production", dfs_tmpdir="./models/")
-    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}", dfs_tmpdir="./models/")
+    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production")
+    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}")
 
     logger.info(f"Latest model version is {latest_model_version}.")
 
-    val_prod = current_prod_pipeline.transform(val)
-    val_latest = latest_pipeline.transform(val)
+    val_prod = current_prod_pipeline.transform(val).select("features", "ARR_DELAY")
+    val_latest = latest_pipeline.transform(val).select("features", "ARR_DELAY")
+    
+    # logger.info("val columns:", val_prod.columns)
+   
 
     current_prod_model_metrics = _get_bs_metrics(current_prod_model, val_prod)
     latest_model_metrics = _get_bs_metrics(latest_model, val_latest)
@@ -185,7 +189,9 @@ def _add_weekdays_features(df):
 
 def _get_bs_metrics(model, df, num_iterations=3000):
     from sklearn.metrics import r2_score
-
+    import numpy as np
+    import pandas as pd
+    
     np.random.seed(42)
     predictions = model.transform(df)
 
