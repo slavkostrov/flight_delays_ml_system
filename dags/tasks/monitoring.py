@@ -12,7 +12,7 @@ from base_config import Config
 
 import logging
 
-logger = logging.getLogger("prepare_features")
+logger = logging.getLogger("monitoring")
 
 
 def get_hook():
@@ -42,12 +42,14 @@ def update_main_stats(config: Config):
     owner = config.dag_name
 
     hook = get_hook()
+    values = (date, dataset_name, row_count, columns_count)
+    logger.info(f"Inserting values: {values}")
     with hook.get_conn() as conn:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO main_data_stats (date, dataset_name, row_count, column_count, OWNER)
-                VALUES (%s, %s, %s);
+                INSERT INTO main_data_stats (date, dataset_name, row_count, column_count)
+                VALUES (%s, %s, %s, %s);
                 """,
-                (date, dataset_name, row_count, columns_count, owner)
+                values
             )

@@ -41,14 +41,13 @@ with DAG(
     create_main_stats_table = PostgresOperator(
         task_id="create_main_stats_table",
         sql="""
-                CREATE TABLE IF NOT EXISTS main_data_stats (
-                data_id SERIAL PRIMARY KEY,
-                date TIMESTAMP,
-                dataset_name VARCHAR NOT NULL,
-                row_count VARCHAR NOT NULL,
-                column_count DATE NOT NULL,
-                OWNER VARCHAR NOT NULL);
-              """,
+                 CREATE TABLE IF NOT EXISTS main_data_stats (
+                 data_id SERIAL PRIMARY KEY,
+                 date TIMESTAMP,
+                 dataset_name VARCHAR NOT NULL,
+                 row_count FLOAT NOT NULL,
+                 column_count FLOAT NOT NULL);
+               """,
     )
 
     create_feature_stat_table = PostgresOperator(
