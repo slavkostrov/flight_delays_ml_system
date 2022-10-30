@@ -60,3 +60,10 @@ class Config(BaseModel):
     dag_name: str = ""
     mlflow_tracking_uri: HttpUrl = "http://localhost:5000"
     val_days: int = 7
+
+    input_features: tp.List[str] = ['DEP_DELAY', 'TAXI_OUT', 'CRS_ELAPSED_TIME', 'DISTANCE']
+    sql_mean_columns: tp.List[str] = [f"mean_{x}" for x in input_features]
+    sql_std_columns: tp.List[str] = [f"std_{x}" for x in input_features]
+    sql_missing_columns: tp.List[str] = [f"nan_count_{x}" for x in input_features] + [f"nan_prop_{x}" for x in input_features]
+
+
