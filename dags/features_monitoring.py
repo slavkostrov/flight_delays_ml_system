@@ -67,5 +67,5 @@ with DAG(
 
     end_task = EmptyOperator(task_id="end")
 
-    start_task >> [create_main_stats_table >> add_main_statistics]
-    start_task >> [create_feature_stat_table >> add_statistics] >> end_task
+    start_task >> create_main_stats_table >> add_main_statistics
+    start_task >> create_feature_stat_table >> add_statistics >> end_task
