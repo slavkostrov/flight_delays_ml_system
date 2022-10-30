@@ -109,6 +109,12 @@ def concat_features(config: Config):
     else:
         features = features.union(data)
 
-    output_path = f"{config.output_prefix}/features_{config.dataset_name}.parquet"
+    output_path = f"{config.output_prefix}/_features_{config.dataset_name}.parquet"
     logger.info(f"Writing result into {output_path}.")
     features.write.parquet(output_path, mode="overwrite")
+    
+    # TODO: FIX with paritions or smth else
+    features_path = f"{config.output_prefix}/features_{config.dataset_name}.parquet"
+    features = spark.read.parquet(output_path)
+    features.write.parquet(features_path, mode="overwrite")
+
