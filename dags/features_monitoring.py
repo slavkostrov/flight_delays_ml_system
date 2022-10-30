@@ -62,6 +62,9 @@ with DAG(
         """,
     )
 
+    add_statistics = EmptyOperator(task_id="add_feature_stats")
+    add_main_statistics = EmptyOperator(task_id="add_main_stats")
+
     end_task = EmptyOperator(task_id="end")
 
-    start_task >> [create_main_stats_table, create_feature_stat_table] >> end_task
+    start_task >> [create_main_stats_table >> add_main_statistics, create_feature_stat_table >> add_statistics] >> end_task
