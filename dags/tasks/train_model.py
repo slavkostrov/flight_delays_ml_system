@@ -79,8 +79,9 @@ def train_model(config: Config):
         features = transformer.transform(features)
 
         model = LinearRegression(featuresCol="features", labelCol=config.target_column)
+
         # Splitting into train and test datasets
-        train, test = features.randomSplit([0.8, 0.2])
+        train, test = features.randomSplit([0.8, 0.2], seed=42)
         logger.info(f"train size: {train.count()}, test size: {test.count()}.")
 
         logger.info(f"Fitting model {model}.")
@@ -88,10 +89,11 @@ def train_model(config: Config):
 
         # Predicting and Finding R2 and RMSE Values
         predictions = model.transform(test)
-        eval_reg = RegressionEvaluator(labelCol=config.target_column, metricName="r2")
         eval_results = model.evaluate(test)
 
-        logger.info("R Squared (R2) on test data = %g" % eval_reg.evaluate(predictions))
+        for metric_name in "r2", "rmse", "mse", "mae", "var":
+            eval_reg = RegressionEvaluator(labelCol=config.target_column, metricName=metric_name)
+            logger.info(f"{metric_name.upper()} on test data = %g" % eval_reg.evaluate(predictions))
         logger.info("Root Mean Squared Error (RMSE) on test data = %g" % eval_results.rootMeanSquaredError)
 
         # save model & pipeline to artifacts store
