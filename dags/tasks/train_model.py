@@ -83,6 +83,8 @@ def train_model(config: Config):
         # Splitting into train and test datasets
         # train, test = features.randomSplit([0.8, 0.2], seed=42)
         from_date = datetime.date.today() - datetime.timedelta(days=config.val_days)
+        logger.info("from_date, min_date, max_data", from_date, features.select(F.min("FL_DATE"), F.max("FL_DATE")).collect())
+
         val_filter = F.col("FL_DATE") >= str(from_date)
         train, test = features.filter(~val_filter), features.filter(val_filter)
 
