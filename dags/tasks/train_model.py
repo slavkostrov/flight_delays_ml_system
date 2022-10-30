@@ -2,6 +2,7 @@
 Module with tasks for model training
 """
 import datetime
+import os
 import sys
 
 from pyspark.ml import Pipeline
@@ -131,11 +132,13 @@ def eval_model(config: Config):
 
     latest_model_version = client.get_latest_versions(config.model_name)[-1].version
 
-    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production")
-    latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}")
+    if not os.path.exists("./models"):
+        os.system("mkdir ./models")
+    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production", dfs_tmpdir="./models/")
+    latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}", dfs_tmpdir="./models/")
 
-    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production")
-    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}")
+    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production", dfs_tmpdir="./models/")
+    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}", dfs_tmpdir="./models/")
 
     logger.info(f"Latest model version is {latest_model_version}.")
 
