@@ -7,9 +7,10 @@ import sys
 _folder = __file__[: __file__.rfind("/") + 1]
 sys.path.extend([_folder, _folder[:_folder.rfind("/") + 1]])
 
-from utils import get_spark, read_parquet
+from utils import get_spark, read_parquet, setup_s3_credentials
 from base_config import Config
 import pyspark.sql.functions as F
+import mlflow
 
 import logging
 
@@ -97,3 +98,33 @@ def update_features_stats(config: Config):
                 values
             )
 
+
+def add_new_metrics(config: Config):
+    setup_s3_credentials()
+    mlflow.set_tracking_uri(config.mlflow_tracking_uri)
+
+    experiment_name = f"{config.dag_prefix}flight_delay_model"
+    current_experiment = dict(mlflow.get_experiment_by_name(experiment_name))
+    experiment_id = current_experiment['experiment_id']
+
+    df = mlflow.search_runs([experiment_id], order_by=["Date DESC"])
+    last_run_id = df.loc[0, 'run_id']
+    last_run = mlflow.get_run(run_id=last_run_id)
+
+    metrics_sql = \
+        f"""
+                    INSERT INTO model_metrics (date, model_name, dataset_name, metric_name, value)
+                    VALUES (%s, %s, %s, %s, %s);
+                    """
+
+    hook = get_hook()
+    date = datetime.datetime.now()
+    for name, value in last_run.data.metrics.items():
+        with hook.get_conn() as conn:
+            values = (date, config.model_name, config.dataset_name, name, value)
+            logger.info(f"Inserting: {values}")
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    metrics_sql,
+                    values
+                )

@@ -14,7 +14,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 
 from base_config import Config
-from tasks.monitoring import update_main_stats, update_features_stats
+from tasks.monitoring import update_main_stats, update_features_stats, add_new_metrics
 
 config = Config()
 
@@ -50,6 +50,19 @@ with DAG(
                """,
     )
 
+    create_metrics_table = PostgresOperator(
+        task_id="create_metrics_table",
+        sql="""
+                 CREATE TABLE IF NOT EXISTS model_metrics (
+                 data_id SERIAL PRIMARY KEY,
+                 date TIMESTAMP NOT NULL,
+                 model_name VARCHAR NOT NULL,
+                 dataset_name VARCHAR NOT NULL,
+                 metric_name VARCHAR NOT NULL,
+                 value FLOAT NOT NULL);
+               """,
+    )
+
     create_feature_stat_table = PostgresOperator(
         task_id="create_feature_stat_table",
         sql=f"""
@@ -70,7 +83,12 @@ with DAG(
         python_callable=update_main_stats, op_kwargs={"config": config}, task_id="add_main_stats"
     )
 
+    add_new_metrics = PythonOperator(
+        python_callable=add_new_metrics, op_kwargs={"config": config}, task_id="add_new_metrics"
+    )
+
     end_task = EmptyOperator(task_id="end")
 
+    start_task >> create_metrics_table >> add_new_metrics >> end_task
     start_task >> create_main_stats_table >> add_main_statistics >> end_task
     start_task >> create_feature_stat_table >> add_statistics >> end_task
