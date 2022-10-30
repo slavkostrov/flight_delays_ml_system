@@ -64,10 +64,10 @@ def train_model(config: Config):
         features = features.select(feature_columns + [config.target_column])
         features = features.filter(F.col(config.target_column).isNotNull())
 
-        output_columns = ["{}_imputed".format(c) for c in features.columns]
+        output_columns = ["{}_imputed".format(c) for c in feature_columns]
         logger.info(f"Using features: {output_columns}")
         imputer = Imputer(
-            inputCols=features.columns,
+            inputCols=feature_columns,
             outputCols=output_columns,
         ).setStrategy("mean")
         assembler = VectorAssembler(inputCols=output_columns, outputCol="features")
