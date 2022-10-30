@@ -17,9 +17,11 @@ from base_config import Config
 from tasks.train_model import train_model
 
 config = Config()
+DAG_NAME = f"{config.dag_prefix}train_model"
+config.dag_name = DAG_NAME
 
 with DAG(
-    f"{config.dag_prefix}train_model",
+    DAG_NAME,
     default_args={
         "depends_on_past": False,
         "email": [config.user_email],
