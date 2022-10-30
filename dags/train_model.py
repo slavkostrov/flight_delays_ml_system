@@ -14,7 +14,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 from base_config import Config
-from tasks.train_model import train_model
+from tasks.train_model import train_model, eval_model
 
 config = Config()
 DAG_NAME = f"{config.dag_prefix}train_model"
@@ -44,5 +44,9 @@ with DAG(
         python_callable=train_model, op_kwargs={"config": config}, task_id="train_model"
     )
 
+    eval_model_task  = PythonOperator(
+        python_callable=eval_model, op_kwargs={"config": config}, task_id="train_model"
+    )
+
     end_task = EmptyOperator(task_id="end")
-    start_task >> train_model_task >> end_task
+    start_task >> train_model_task >> eval_model_task >> end_task
