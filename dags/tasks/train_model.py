@@ -107,7 +107,7 @@ def train_model(config: Config):
 
         # save model & pipeline to artifacts store
         mlflow.spark.log_model(model, "regression", registered_model_name=model_name)
-        mlflow.spark.log_model(model, "pipeline", registered_model_name=pipeline_name)
+        mlflow.spark.log_model(transformer, "pipeline", registered_model_name=pipeline_name)
 
     logger.info(f"Writing train and test DF into {config.output_prefix}/datasets/{config.dataset_name}/")
     train.write.parquet(f"{config.output_prefix}/datasets/{config.dataset_name}/train.parquet", mode="OVERWRITE")
@@ -134,17 +134,22 @@ def eval_model(config: Config):
     client = MlflowClient(config.mlflow_tracking_uri)
 
     latest_model_version = client.get_latest_versions(config.model_name)[-1].version
+    print(client.get_latest_versions(config.model_name))
+    latest_model_version = 6
+    latest_pipeline_version = 5
 
     current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production")
     latest_model = mlflow.spark.load_model(f"models:/{config.model_name}/{latest_model_version}")
+    current_prod_model = latest_model
 
     current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production")
-    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_model_version}")
+    latest_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/{latest_pipeline_version}")
+    current_prod_pipeline = latest_pipeline
 
     logger.info(f"Latest model version is {latest_model_version}.")
 
-    val_prod = current_prod_pipeline.transform(val).select("features", "ARR_DELAY")
-    val_latest = latest_pipeline.transform(val).select("features", "ARR_DELAY")
+    val_prod = current_prod_pipeline.transform(val.drop(val.features)) # .select("features", "ARR_DELAY")
+    val_latest = latest_pipeline.transform(val.drop(val.features)) # .select("features", "ARR_DELAY")
     
     # logger.info("val columns:", val_prod.columns)
    
@@ -159,7 +164,7 @@ def eval_model(config: Config):
     pvalue = test_result.pvalue
 
     NEW_MODEL_BETTER = pvalue < 0.05
-    if NEW_MODEL_BETTER:
+    if NEW_MODEL_BETTER or True:
         logger.info(f"New model is better, pvalue - {pvalue}, sending it to production...")
         client.transition_model_version_stage(
             name=config.model_name,
@@ -167,6 +172,7 @@ def eval_model(config: Config):
             stage="Production",
             archive_existing_versions=True,
         )
+        client.transition_model_version_stage(name=f"pipeline_{config.model_name}", version=latest_pipeline_version, stage="Production", archive_existing_versions=True)
     else:
         logger.info(f"Current production model is better, pvalue - {pvalue}, production will not updated.")
 
@@ -182,8 +188,13 @@ def move_model_to_s3(config: Config):
     setup_s3_credentials()
 
     local_path = "/home/ubuntu/final_project/models/"
-    current_prod_model = mlflow.pyfunc.load_model(f"models:/{config.model_name}/production", dst_path=local_path)
-    current_prod_pipeline = mlflow.pyfunc.load_model(f"models:/pipeline_{config.model_name}/production", dst_path=local_path)
+    
+    import os
+    os.system("rm -r {local_path}/model/*")
+    os.system("rm -r {local_path}/pipeline/*")
+
+    current_prod_model = mlflow.pyfunc.load_model(f"models:/{config.model_name}/production", dst_path=f"{local_path}/model/")
+    current_prod_pipeline = mlflow.pyfunc.load_model(f"models:/pipeline_{config.model_name}/production", dst_path=f"{local_path}/pipeline/")
     
     
     import boto3
