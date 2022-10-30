@@ -45,7 +45,7 @@ with DAG(
     )
 
     eval_model_task  = PythonOperator(
-        python_callable=eval_model, op_kwargs={"config": config}, task_id="train_model"
+        python_callable=eval_model, op_kwargs={"config": config}, task_id="eval_model"
     )
 
     end_task = EmptyOperator(task_id="end")
