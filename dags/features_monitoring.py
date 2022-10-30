@@ -11,8 +11,10 @@ import datetime
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator as EmptyOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.operators.python_operator import PythonOperator
 
 from base_config import Config
+from tasks.monitoring import update_main_stats
 
 config = Config()
 
@@ -63,7 +65,9 @@ with DAG(
     )
 
     add_statistics = EmptyOperator(task_id="add_feature_stats")
-    add_main_statistics = EmptyOperator(task_id="add_main_stats")
+    add_main_statistics = PythonOperator(
+        python_callable=update_main_stats, op_kwargs={"config": config}, task_id="add_main_stats"
+    )
 
     end_task = EmptyOperator(task_id="end")
 
