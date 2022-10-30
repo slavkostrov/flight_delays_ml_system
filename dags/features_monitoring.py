@@ -14,7 +14,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.python_operator import PythonOperator
 
 from base_config import Config
-from tasks.monitoring import update_main_stats
+from tasks.monitoring import update_main_stats, update_features_stats
 
 config = Config()
 
@@ -63,7 +63,9 @@ with DAG(
         """,
     )
 
-    add_statistics = EmptyOperator(task_id="add_feature_stats")
+    add_statistics = PythonOperator(
+        python_callable=update_features_stats, op_kwargs={"config": config}, task_id="add_main_stats"
+    )
     add_main_statistics = PythonOperator(
         python_callable=update_main_stats, op_kwargs={"config": config}, task_id="add_main_stats"
     )
