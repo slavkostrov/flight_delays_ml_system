@@ -178,13 +178,23 @@ def move_model_to_s3(config: Config):
     :param config: Config object (see base_config.py)
     :return:
     """
-    # /home/ubuntu/final_project/models
     mlflow.set_tracking_uri(config.mlflow_tracking_uri)
     setup_s3_credentials()
 
     local_path = "/home/ubuntu/final_project/models/"
-    current_prod_model = mlflow.spark.load_model(f"models:/{config.model_name}/production", dst_path=local_path)
-    current_prod_pipeline = mlflow.spark.load_model(f"models:/pipeline_{config.model_name}/production", dst_path=local_path)
+    current_prod_model = mlflow.pyfunc.load_model(f"models:/{config.model_name}/production", dst_path=local_path)
+    current_prod_pipeline = mlflow.pyfunc.load_model(f"models:/pipeline_{config.model_name}/production", dst_path=local_path)
+    
+    
+    import boto3
+    session = boto3.session.Session()
+    s3 = session.client(
+        service_name='s3',
+        endpoint_url='https://storage.yandexcloud.net'
+    
+    )
+    os.system(f"zip -r /home/ubuntu/final_project/models.zip {local_path}")
+    s3.upload_file("/home/ubuntu/final_project/models.zip", "slava-otus", "final_project/prod_models.zip")
 
 
 def _add_weekdays_features(df):
