@@ -77,11 +77,12 @@ def update_features_stats(config: Config):
         agg_columns.append(F.stddev(column).alias(f"std_{column}"))
         agg_columns.append(F.sum(F.col(column).isNull().cast("int")).alias(f"nan_count_{column}"))
         agg_columns.append(F.mean(F.col(column).isNull().cast("int")).alias(f"nan_prop_{column}"))
-    
+
     logger.info(f"Columns - {agg_columns}")
-    all_columns = ["dataset_name", "date"] + config.sql_mean_columns + config.sql_std_columns + config.sql_missing_columns
+    all_columns = ["dataset_name",
+                   "date"] + config.sql_mean_columns + config.sql_std_columns + config.sql_missing_columns
     all_columns_sql = \
-                f"""
+        f"""
                 INSERT INTO features_stats ({', '.join(all_columns)})
                 VALUES ({', '.join(['%s'] * len(all_columns))});
                 """

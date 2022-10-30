@@ -36,6 +36,7 @@ if __name__ == "__main__":
         'flight_weekday_3', 'flight_weekday_4', 'flight_weekday_5',
         'flight_weekday_6', 'flight_weekday_7'
     ]
+
     data = pd.read_csv("./data.csv")
     for day in range(1, 8):
         data[f"flight_weekday_{day}"] = (pd.to_datetime(data["FL_DATE"]).dt.dayofweek == day).astype(int)
