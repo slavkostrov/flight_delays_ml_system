@@ -64,7 +64,7 @@ with DAG(
     )
 
     add_statistics = PythonOperator(
-        python_callable=update_features_stats, op_kwargs={"config": config}, task_id="add_main_stats"
+        python_callable=update_features_stats, op_kwargs={"config": config}, task_id="add_feature_stats"
     )
     add_main_statistics = PythonOperator(
         python_callable=update_main_stats, op_kwargs={"config": config}, task_id="add_main_stats"
