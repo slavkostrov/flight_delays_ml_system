@@ -1,3 +1,4 @@
 pre-commit
 
 pydantic~=1.10.2
+boto3

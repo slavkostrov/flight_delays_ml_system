@@ -59,3 +59,4 @@ class Config(BaseModel):
 
     dag_name: str = ""
     mlflow_tracking_uri: HttpUrl = "http://localhost:5000"
+    val_days: int = 7

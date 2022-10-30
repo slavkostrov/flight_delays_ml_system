@@ -53,15 +53,15 @@ def train_model(config: Config):
     mlflow.set_tracking_uri(config.mlflow_tracking_uri)
 
     today = str(datetime.datetime.now().date())
-    model_name = f"{config.model_name}_{today}"
-    pipeline_name = f"pipeline_{config.model_name}_{today}"
+    model_name = f"{config.model_name}"
+    pipeline_name = f"pipeline_{config.model_name}"
 
     # set exp name
     mlflow.set_experiment(f"{config.dag_prefix}flight_delay_model")
     with mlflow.start_run(description="flight_delay_model_evaluation") as active_run:
         features = read_parquet(spark, f"{config.output_prefix}/features_{config.dataset_name}.parquet")
         features = _add_weekdays_features(features)
-        features = features.select(feature_columns + [config.target_column])
+        features = features.select(feature_columns + ["FL_DATE", config.target_column])
         features = features.filter(F.col(config.target_column).isNotNull())
 
         output_columns = ["{}_imputed".format(c) for c in feature_columns]
@@ -81,7 +81,11 @@ def train_model(config: Config):
         model = LinearRegression(featuresCol="features", labelCol=config.target_column)
 
         # Splitting into train and test datasets
-        train, test = features.randomSplit([0.8, 0.2], seed=42)
+        # train, test = features.randomSplit([0.8, 0.2], seed=42)
+        from_date = datetime.date.today() - datetime.timedelta(days=config.val_days)
+        val_filter = F.col("FL_DATE") >= str(from_date)
+        train, test = features.filter(~val_filter), features.filter(val_filter)
+
         logger.info(f"train size: {train.count()}, test size: {test.count()}.")
 
         logger.info(f"Fitting model {model}.")
@@ -104,6 +108,22 @@ def train_model(config: Config):
     train.write.parquet(f"{config.output_prefix}/datasets/{config.dataset_name}/train.parquet", mode="OVERWRITE")
     test.write.parquet(f"{config.output_prefix}/datasets/{config.dataset_name}/test.parquet", mode="OVERWRITE")
 
+    from mlflow.client import MlflowClient
+    client = MlflowClient(config.mlflow_tracking_uri)
+    client.transition_model_version_stage(
+        name=model_name,
+        version=client.get_latest_versions(model_name)[-1].version,
+        stage="Production",
+        archive_existing_versions=True,
+    )
+
+    client.transition_model_version_stage(
+        name=pipeline_name,
+        version=client.get_latest_versions(pipeline_name)[-1].version,
+        stage="Production",
+        archive_existing_versions=True,
+    )
+
 
 def eval_model(config: Config):
     """
@@ -113,7 +133,9 @@ def eval_model(config: Config):
     :param config: Config object (see base_config.py)
     :return:
     """
-    pass
+    from mlflow.client import MlflowClient
+    client = MlflowClient(config.mlflow_tracking_uri)
+    # dst_path
 
 
 def move_model_to_s3(config: Config):
