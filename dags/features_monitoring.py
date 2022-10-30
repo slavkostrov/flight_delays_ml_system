@@ -58,7 +58,7 @@ with DAG(
                 date TIMESTAMP,
                 {', '.join([(x) + ' FLOAT' for x in config.sql_mean_columns])},
                 {', '.join([(x) + ' FLOAT' for x in config.sql_std_columns])},
-                {', '.join([(x) + ' FLOAT' for x in config.sql_missing_columns])};
+                {', '.join([(x) + ' FLOAT' for x in config.sql_missing_columns])});
         """,
     )
 
