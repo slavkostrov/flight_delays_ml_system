@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: delay-prediction
+spec:
+  schedule: "@hourly"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: predictor
+            image: slavkostrov/flight_delay_preictions
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: AWS_SECRET_ACCESS_KEY
+              - name: MLFLOW_S3_ENDPOINT_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: MLFLOW_S3_ENDPOINT_URL
+              - name: AWS_S3_ENDPOINT_URL
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: AWS_S3_ENDPOINT_URL
+              - name: AWS_DEFAULT_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: AWS_DEFAULT_REGION
+              - name: BUCKET_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: BUCKET_NAME
+              - name: DATA_PATH
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: DATA_PATH
+              - name: MODELS_PATH
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: MODELS_PATH
+              - name: OUTPUT_PATH
+                valueFrom:
+                  secretKeyRef:
+                    name: delay-predictions-secret
+                    key: OUTPUT_PATH
+          restartPolicy: OnFailure

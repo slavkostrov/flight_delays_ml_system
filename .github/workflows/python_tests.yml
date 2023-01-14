@@ -17,13 +17,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install black mypy pytest
       - name: Check PEP8 compliance
         run: |
-          black --check --verbose ./ # src service
+          black --check --verbose dags
         continue-on-error: true
       - name: Lint with mypy
         run: |
-          mypy src
+          mypy dags
         continue-on-error: true
       - name: Unit tests with pytest
         run: |
